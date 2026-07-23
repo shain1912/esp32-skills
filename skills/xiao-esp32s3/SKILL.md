@@ -128,6 +128,18 @@ for what each proves and its expected output.
    bootloader mode (pitfall 2).
 7. **First compile is slow** (cold cache, big toolchain). Do not kill it
    before ~3 minutes; use a generous timeout.
+8. **Board can get stuck in reset after a serial session** (only the ROM
+   banner `ESP-ROM:esp32s3-...` prints, app never boots, SoftAP/servers die).
+   Cause: DTR/RTS line state left by the PC when closing the port. Recover
+   with `arduino-cli upload` (esptool's reset sequence fixes it). If a
+   headless demo (web server etc.) must keep running, avoid opening the
+   serial port at all — use mDNS or the router's DHCP table to find the
+   board instead of reading its IP over serial.
+9. **Same-name Edge Impulse library swap needs `--clean`.** Replacing the
+   `<project>_inferencing` library with a rebuilt copy (same version) leaves
+   stale objects in arduino-cli's cache — symptoms: `objs.a ... is not an
+   object` link errors or edits that appear to have no effect. Always pass
+   `--clean` on the first compile after swapping the library.
 
 ## Verifying without human eyes
 
