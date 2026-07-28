@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XIAO ESP32S3 대시보드</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="title-block">
+        <h1>XIAO ESP32S3 대시보드</h1>
+        <p class="subtitle">MQTT로 연결된 보드의 터치 센서 값을 실시간으로 보고 LED를 제어합니다.</p>
+      </div>
+
+      <div class="broker-panel">
+        <label for="brokerHost">브로커 주소</label>
+        <div class="broker-input-row">
+          <input type="text" id="brokerHost" placeholder="예: 192.168.0.42" />
+          <span class="broker-port">:9001</span>
+          <button id="connectBtn" class="btn-connect">연결</button>
+        </div>
+        <div id="connStatus" class="conn-status" data-state="idle">브로커 주소를 입력하고 연결 버튼을 누르세요.</div>
+      </div>
+    </header>
+
+    <main>
+      <div id="emptyState" class="empty-state">
+        <p>연결된 보드가 없습니다.</p>
+        <p class="empty-sub">보드에 펌웨어를 업로드하고 WiFi에 연결되면 자동으로 카드가 나타납니다.</p>
+      </div>
+      <div id="deviceGrid" class="device-grid"></div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

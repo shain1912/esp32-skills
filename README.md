@@ -64,6 +64,14 @@ Same two apps, but the board joins your WiFi router: every device keeps its inte
 
 > "I want the camera page without losing internet" · "인터넷 안 끊기게 해줘"
 
+### 📊 [`xiao-esp32s3-mqtt-dashboard`](skills/xiao-esp32s3-mqtt-dashboard/SKILL.md) — multi-board MQTT dashboard
+
+Any number of boards join your WiFi (STA mode), publish their touch sensor value over MQTT, and accept LED on/off commands — while a browser dashboard shows every board live as it connects and lets you toggle each LED. Every board runs the *identical* compiled firmware: each one derives a MAC-based ID at boot, so topics never collide and there is nothing to edit per board.
+
+Bundled: a verified `.ino` template, a static `mqtt.js` dashboard (no build step, no baked-in IP — you type the broker address into the page), and two PowerShell setup scripts for the Mosquitto broker side. **8 numbered pitfalls** cover the parts that don't show up until you actually try it on Windows: Mosquitto 2.x's loopback-only default, the elevation the Windows Mosquitto *service* requires for any config change, Windows Firewall silently blocking LAN devices even after the listener is open (with a documented false-positive self-test to avoid), why `PubSubClient` error `rc=-2` is never a credentials problem, and why re-opening the serial port on an already-running board can make a healthy deployment look broken.
+
+> "여러 esp32s3 대시보드 만들어줘" · "MQTT로 터치센서 값 여러 보드에서 모아줘" · "Mosquitto로 ESP32 여러 개 연결하고 싶어"
+
 ### 🧠 [`xiao-edgeimpulse-train`](skills/xiao-edgeimpulse-train/SKILL.md) — TinyML training pipeline
 
 Train and deploy audio (keyword spotting) or vision (image classification) models using **only the Edge Impulse REST API** — no `edge-impulse-cli`, which fails to build on modern Node/Windows. Covers the whole loop:
