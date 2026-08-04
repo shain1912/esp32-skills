@@ -49,6 +49,7 @@ name), then replace the placeholders literally:
 | `__AP_SSID__` | hotspot name | `XIAO_01` |
 | `__AP_PASS__` | hotspot password (8+ chars) | `class1234` |
 | `__AP_CHANNEL__` | WiFi channel (bare number, no quotes) | `6` |
+| `__EI_PROJECT__` | inference app only — Edge Impulse project name, matching the installed `<name>_inferencing` library folder | `clfc` |
 
 ## Step 3 — compile, upload
 

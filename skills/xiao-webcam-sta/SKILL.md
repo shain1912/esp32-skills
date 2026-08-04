@@ -47,6 +47,7 @@ name), then replace the placeholders literally:
 | `__WIFI_SSID__` | 2.4 GHz router SSID | `myhome` |
 | `__WIFI_PASS__` | router password | `pass1234` |
 | `__MDNS_NAME__` | hostname (lowercase, no spaces) | `xiao` |
+| `__EI_PROJECT__` | inference app only — Edge Impulse project name, matching the installed `<name>_inferencing` library folder | `clfc` |
 
 The template already falls back to a `XIAO_CAM` hotspot if the router is
 unreachable for 15 s, so a wrong password degrades gracefully.

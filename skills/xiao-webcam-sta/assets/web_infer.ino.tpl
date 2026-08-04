@@ -4,7 +4,7 @@
 // location boxes require a FOMO object-detection model.)
 //
 // Connect to WiFi "XIAO_CAM" (pw 12345678), open http://192.168.4.1
-#include <claude_inferencing.h>
+#include <__EI_PROJECT___inferencing.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
