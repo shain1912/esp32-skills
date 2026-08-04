@@ -57,6 +57,16 @@ The monitor reattaches automatically when the port drops, which on a USB-Serial/
 
 > "Open the serial monitor" · "시리얼 모니터 띄워줘" · "the monitor keeps disconnecting" · "why is COM3 showing nothing?"
 
+### 🌡️ [`xiao-i2c-sensors`](skills/xiao-i2c-sensors/SKILL.md) — I2C sensor bring-up
+
+BH1750 light, BME280 temperature/pressure/humidity, and BNO055 9-DOF orientation: a unit test per sensor, plus all three streaming together on one bus at 1 Hz. Five sketches, all run on real hardware — the unit tests pass 5/5, 8/8, and 10/10.
+
+The tests bounds-check every reading against the datasheet, because the failure that actually happens is a dead bus returning `0` or `NaN`, not a part that drifted 2 %. They also keep anything needing a human hand — covering the light sensor, breathing on the humidity sensor, moving the IMU — out of the scored section, after an early version asserted "consecutive readings differ" and failed on working hardware whenever nobody was waving at it.
+
+**6 numbered pitfalls** covering the traps that make a healthy-looking sensor return nothing: a BNO055 at 0x29 that the default 0x28 driver cannot reach, `setExtCrystalUse(true)` parking the chip in idle with every output stuck at `0.00` while self-test still reports `0x0F`, and 0x76 being a BMP280 (no humidity) as often as a BME280 — read chip-ID `0xD0`, not the silkscreen.
+
+> "센서 값 읽어줘" · "BNO055 orientation is always 0" · "is this a BME280 or a BMP280?" · "unit test my I2C sensors"
+
 ### 📸 [`xiao-webcam-ap`](skills/xiao-webcam-ap/SKILL.md) — camera web apps, hotspot mode
 
 The board becomes its own WiFi hotspot serving two pages at `http://192.168.4.1`:
