@@ -47,6 +47,16 @@ Bundled: 11 hardware-tested example sketches (blink, serial echo, touch, ADC, PW
 
 > "Upload a sketch that blinks the LED twice per second" · "Read what the board is printing" · "Why did COM4 disappear?"
 
+### 🖥️ [`xiao-serial-monitor`](skills/xiao-serial-monitor/SKILL.md) — serial monitoring, both modes
+
+Serial output in the two shapes it actually takes: a **bounded read** the agent runs to debug its own change (returns an exit code, never hangs the session), and a **persistent terminal monitor** handed to the user with the exact command for checking output later. One script does both — add `-Seconds 10` and it stops on its own.
+
+The monitor reattaches automatically when the port drops, which on a USB-Serial/JTAG board is every single reset and re-upload, so one invocation covers a whole debugging session instead of dying at the first reset. Port detection matches on **USB vendor ID** rather than taking the first `Serial Port (USB)` row — on a machine with a CP210x or CH340 permanently attached, the naive pick lands on the wrong device and you get a silent, empty window with no error. Ships `mon` / `flash` / `boards` shortcuts for the PowerShell profile.
+
+**8 numbered pitfalls**, including the wrong-port trap, COM numbers changing on replug, an open monitor blocking every upload, why attaching to an already-running board shows nothing (press Reset — the boot banner is long gone), and PowerShell 5.1 turning non-ASCII into mojibake unless the `.ps1` is saved as UTF-8 **with BOM**.
+
+> "Open the serial monitor" · "시리얼 모니터 띄워줘" · "the monitor keeps disconnecting" · "why is COM3 showing nothing?"
+
 ### 📸 [`xiao-webcam-ap`](skills/xiao-webcam-ap/SKILL.md) — camera web apps, hotspot mode
 
 The board becomes its own WiFi hotspot serving two pages at `http://192.168.4.1`:
