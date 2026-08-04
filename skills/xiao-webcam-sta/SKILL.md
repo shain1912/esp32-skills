@@ -61,11 +61,9 @@ arduino-cli upload -p COM4 --fqbn esp32:esp32:XIAO_ESP32S3 --board-options PSRAM
 `PSRAM=opi` is mandatory (camera + model need PSRAM). The inference build
 needs `--clean` if the Edge Impulse library was just swapped.
 
-## Step 4 — verify end-to-end WITHOUT serial
+## Step 4 — verify end-to-end
 
-Do NOT open the serial port after flashing (it can leave the board held in
-reset — pitfall 8 of xiao-esp32s3). The PC is on the same LAN, so verify
-with HTTP directly:
+The PC is on the same LAN, so HTTP is the fastest proof the whole path works:
 
 ```powershell
 Start-Sleep -Seconds 20   # boot + WiFi join
@@ -77,6 +75,40 @@ curl.exe -s -m 15 http://<mdns-name>.local/classify   # JSON with scores
 
 If mDNS resolution is flaky, find the IP once (`ping <name>.local` or router
 DHCP table) and use it directly — report BOTH addresses to the user.
+
+### Watching the board over serial
+
+HTTP proves the page is up, but it cannot show you *why* a board failed to
+join the router. Serial can: the sketch prints the SSID it tried, the IP it
+got, and the mDNS name. Use the `xiao-serial-monitor` skill for it.
+
+```powershell
+mon                      # interactive, port auto-detected
+.\scripts\mon.ps1 -Seconds 15    # bounded, for your own debugging
+```
+
+Expected on success:
+
+```
+Connecting to WiFi ... IP: 192.168.0.179
+mDNS: http://<mdns-name>.local
+Collector ready
+```
+
+Two things worth knowing rather than avoiding:
+
+- Opening the port resets the board via DTR, so the log restarts from boot.
+  That is usually what you want here — the WiFi join messages only print once.
+- If a board ends up stuck showing only the ROM banner afterwards
+  (pitfall 8 of `xiao-esp32s3`), re-running `arduino-cli upload` clears it.
+
+When the user wants to watch it themselves, hand them the command rather than
+launching the interactive monitor from a tool call — it never returns. In
+Claude Code the `!` prefix runs it in their session:
+
+```
+! <path>\mon.ps1
+```
 
 ## Notes
 

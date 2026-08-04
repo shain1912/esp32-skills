@@ -60,10 +60,7 @@ arduino-cli upload -p COM4 --fqbn esp32:esp32:XIAO_ESP32S3 --board-options PSRAM
 `PSRAM=opi` is mandatory (camera + model need PSRAM). The inference build
 needs `--clean` if the Edge Impulse library was just swapped.
 
-## Step 4 — verify WITHOUT breaking the demo
-
-Do NOT open the serial port after flashing (it can leave the board held in
-reset — pitfall 8 of xiao-esp32s3). Instead verify from the network side:
+## Step 4 — verify
 
 ```powershell
 # the AP should appear in a WiFi scan within ~15 s of flashing
@@ -71,6 +68,52 @@ netsh wlan show networks | Select-String "<AP_SSID>"
 ```
 
 (netsh caches scans — retry after 20 s before concluding failure.)
+
+**This check needs a WiFi adapter on the PC, and many desktops do not have
+one.** If `netsh wlan show interfaces` reports that the Wireless AutoConfig
+service is not running, or `Get-NetAdapter` lists only Ethernet, no amount of
+retrying will show the AP — the machine physically cannot scan. Do not read
+that as a failed flash. Fall back to serial (below), or have the user check
+from their phone.
+
+### Watching the board over serial
+
+In AP mode the PC usually cannot reach the board at all, so serial is often
+the *only* verification available to you. Use the `xiao-serial-monitor` skill.
+
+```powershell
+mon                      # interactive, port auto-detected
+.\scripts\mon.ps1 -Seconds 15    # bounded, for your own debugging
+```
+
+Expected on success:
+
+```
+AP started. Open http://192.168.4.1
+Collector ready
+```
+
+`Camera init failed` instead means the sketch halts before ever starting the
+AP — the board is a plain XIAO ESP32S3 without the Sense camera module, or the
+module is not seated. Scanning for the SSID forever will never reveal this;
+one serial read does.
+
+Two things worth knowing rather than avoiding:
+
+- Opening the port resets the board via DTR, so the log restarts from boot.
+  That is what you want here — these lines only print once at startup.
+- If a board ends up stuck showing only the ROM banner afterwards
+  (pitfall 8 of `xiao-esp32s3`), re-running `arduino-cli upload` clears it,
+  and leaves the sketch running for the demo.
+
+When the user wants to watch it themselves, hand them the command rather than
+launching the interactive monitor from a tool call — it never returns. In
+Claude Code the `!` prefix runs it in their session:
+
+```
+! <path>\mon.ps1
+```
+
 Full check: connect a device to the AP and open http://192.168.4.1 —
 tell the user connecting from THEIR phone/PC will drop that device's
 internet while connected; that is expected in AP mode.
