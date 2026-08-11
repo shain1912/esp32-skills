@@ -67,6 +67,18 @@ The tests bounds-check every reading against the datasheet, because the failure 
 
 > "센서 값 읽어줘" · "BNO055 orientation is always 0" · "is this a BME280 or a BMP280?" · "unit test my I2C sensors"
 
+### 🎯 [`xiao-imu-motion`](skills/xiao-imu-motion/SKILL.md) — MPU-6050/6500 motion sensing
+
+Accelerometer + gyroscope over I2C with boot-time calibration and a moving/still decision driven to the onboard LED. Three sketches, all run on real hardware; the driver uses **no IMU library** because the obvious one can't drive the part most people actually have.
+
+Modules sold as "MPU-6050" are frequently **MPU-6500**. Both answer at `0x68` with an identical data-register layout, so an I2C scan cannot tell them apart — and `Adafruit_MPU6050`'s `begin()` checks `WHO_AM_I`, sees `0x70`, and reports `MPU6050 not found - check wiring` on a perfectly wired module. Read register `0x75`, not the silkscreen.
+
+Calibration exists because the theoretical numbers are wrong by margins that swamp the measurement: the reference unit's gyro sat 3.3 °/s off zero (≈200°/min of drift if you integrate it), and its accelerometer magnitude read 10.75 m/s² at rest instead of 9.81 — 9 % high, which eats most of a sensible motion threshold before the board has moved. So the sketch subtracts a *measured* resting baseline rather than the constant.
+
+**8 numbered pitfalls**, including the temperature formula differing between the two chips (wrong one = silently off by ~15 °C, the one channel with no obvious sanity check), `ACCEL_CONFIG2` existing only on the 6500, why axes must be read in one 14-byte burst, and how draining the serial buffer hides the one-shot `setup()` error that explains everything.
+
+> "움직임 감지해줘" · "MPU6050 not found but the scan sees it" · "my gyro drifts" · "is this a 6050 or a 6500?"
+
 ### 📸 [`xiao-webcam-ap`](skills/xiao-webcam-ap/SKILL.md) — camera web apps, hotspot mode
 
 The board becomes its own WiFi hotspot serving two pages at `http://192.168.4.1`:
