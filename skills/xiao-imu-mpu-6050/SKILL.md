@@ -1,5 +1,5 @@
 ---
-name: xiao-imu-MPU-6050
+name: xiao-imu-mpu-6050
 description: >
   Motion sensing on a XIAO ESP32S3 with an MPU-6050 / MPU-6500 6-axis IMU:
   accelerometer and gyroscope over I2C, startup calibration, and a moving/still

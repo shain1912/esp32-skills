@@ -67,7 +67,7 @@ The tests bounds-check every reading against the datasheet, because the failure 
 
 > "센서 값 읽어줘" · "BNO055 orientation is always 0" · "is this a BME280 or a BMP280?" · "unit test my I2C sensors"
 
-### 🎯 [`xiao-imu-MPU-6050`](skills/xiao-imu-MPU-6050/SKILL.md) — MPU-6050/6500 motion sensing
+### 🎯 [`xiao-imu-mpu-6050`](skills/xiao-imu-mpu-6050/SKILL.md) — MPU-6050/6500 motion sensing
 
 Accelerometer + gyroscope over I2C with boot-time calibration and a moving/still decision driven to the onboard LED. Three sketches, all run on real hardware; the driver uses **no IMU library** because the obvious one can't drive the part most people actually have.
 
