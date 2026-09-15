@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111418">
+<title>RF 리모컨</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --fg: #15181d; --muted: #6b7280; --line: #e3e6ea;
+    --on: #16a34a; --off: #9ca3af; --accent: #e11d48; --accent-press: #be123c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1216; --card: #171b21; --fg: #eef0f3; --muted: #8b93a0; --line: #262b33; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100dvh; background: var(--bg); color: var(--fg);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: max(20px, env(safe-area-inset-top)) 16px 24px;
+  }
+  header { width: 100%; max-width: 420px; display: flex; justify-content: space-between; align-items: center; }
+  h1 { font-size: 17px; margin: 0; font-weight: 650; }
+  .status { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--off); }
+  .dot.on { background: var(--on); box-shadow: 0 0 0 3px color-mix(in srgb, var(--on) 25%, transparent); }
+  main { flex: 1; width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+  #power {
+    width: min(58vw, 220px); aspect-ratio: 1; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--accent); color: #fff; display: grid; place-items: center;
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 35%, transparent);
+    transition: transform .08s, background .15s, opacity .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #power:active { transform: scale(.96); background: var(--accent-press); }
+  #power:disabled { opacity: .45; cursor: default; transform: none; }
+  #power svg { width: 38%; height: 38%; }
+  #msg { min-height: 1.5em; color: var(--muted); text-align: center; }
+  #msg.ok { color: var(--on); } #msg.err { color: var(--accent); }
+  .card { width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-size: 13px; color: var(--muted); }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+  .row b { color: var(--fg); font-weight: 550; text-align: right; overflow-wrap: anywhere; }
+  button.link { background: none; border: 0; color: var(--muted); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; padding: 4px; }
+  #login { padding: 12px 20px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--fg); font: inherit; font-weight: 600; cursor: pointer; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>RF 리모컨</h1>
+  <div class="status"><span class="dot" id="dot"></span><span id="devState">연결 확인 중</span></div>
+</header>
+
+<main>
+  <section id="loginView" hidden style="text-align:center">
+    <p style="color:var(--muted)">허용된 구글 계정으로 로그인하세요.</p>
+    <button id="login">Google로 로그인</button>
+    <p id="loginErr" class="err" style="color:var(--accent)"></p>
+  </section>
+
+  <section id="appView" hidden style="display:contents">
+    <button id="power" aria-label="전원 버튼 누르기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+    </button>
+    <div id="msg"></div>
+    <div class="card">
+      <div class="row"><span>마지막 누름</span><b id="lastPress">-</b></div>
+      <div class="row"><span>기기 신호</span><b id="rssi">-</b></div>
+      <div class="row"><span>계정</span><b id="who">-</b></div>
+    </div>
+    <button class="link" id="logout">로그아웃</button>
+  </section>
+</main>
+
+<script src="/__/firebase/10.14.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.14.1/firebase-auth-compat.js"></script>
+<script src="/__/firebase/10.14.1/firebase-database-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const auth = firebase.auth();
+const db = firebase.database();
+const root = db.ref("remote");
+
+const ONLINE_MS = 90 * 1000;   // ESP32 heartbeat 30s x3
+const ACK_TIMEOUT_MS = 10 * 1000;
+
+let serverOffset = 0;
+let lastSeen = 0;
+let pendingCmd = null;
+let pendingTimer = null;
+let listening = false;
+
+db.ref(".info/serverTimeOffset").on("value", (s) => { serverOffset = s.val() || 0; });
+const serverNow = () => Date.now() + serverOffset;
+
+function setMsg(text, cls = "") { $("msg").textContent = text; $("msg").className = cls; }
+const fmt = (ms) => new Date(ms).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+function renderOnline() {
+  const on = lastSeen && serverNow() - lastSeen < ONLINE_MS;
+  $("dot").classList.toggle("on", !!on);
+  $("devState").textContent = on ? "기기 온라인" : (lastSeen ? "기기 오프라인" : "기기 기록 없음");
+}
+setInterval(renderOnline, 5000);
+
+function listen() {
+  if (listening) return;
+  listening = true;
+
+  root.child("device").on("value", (s) => {
+    const d = s.val() || {};
+    lastSeen = d.lastSeen || 0;
+    $("rssi").textContent = d.rssi != null ? `${d.rssi} dBm` : "-";
+    renderOnline();
+  }, onDbError);
+
+  root.child("ack").on("value", (s) => {
+    const v = s.val();
+    if (v == null) return;
+    $("lastPress").textContent = fmt(Number(v));
+    if (pendingCmd && String(v) === String(pendingCmd)) {
+      clearTimeout(pendingTimer);
+      pendingCmd = null;
+      $("power").disabled = false;
+      setMsg("리모컨 눌림 확인", "ok");
+    }
+  }, onDbError);
+}
+
+function onDbError(e) {
+  setMsg(e.code === "PERMISSION_DENIED" ? "권한 없음: 허용되지 않은 계정입니다" : `DB 오류: ${e.message}`, "err");
+}
+
+$("power").addEventListener("click", async () => {
+  $("power").disabled = true;
+  setMsg("전송 중…");
+  try {
+    await root.update({ cmd: firebase.database.ServerValue.TIMESTAMP, lastBy: auth.currentUser.email });
+    pendingCmd = (await root.child("cmd").get()).val();
+    setMsg("기기 응답 대기 중…");
+    pendingTimer = setTimeout(() => {
+      pendingCmd = null;
+      $("power").disabled = false;
+      setMsg("기기 응답 없음 (전원/Wi-Fi 확인)", "err");
+    }, ACK_TIMEOUT_MS);
+  } catch (e) {
+    $("power").disabled = false;
+    onDbError(e);
+  }
+});
+
+$("login").addEventListener("click", async () => {
+  $("loginErr").textContent = "";
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await auth.signInWithPopup(provider);
+  } catch (e) {
+    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+      await auth.signInWithRedirect(provider);
+    } else if (e.code !== "auth/popup-closed-by-user") {
+      $("loginErr").textContent = e.message;
+    }
+  }
+});
+$("logout").addEventListener("click", () => auth.signOut().then(() => location.reload()));
+
+auth.onAuthStateChanged((user) => {
+  $("loginView").hidden = !!user;
+  $("appView").hidden = !user;
+  if (user) { $("who").textContent = user.email; listen(); }
+});
+</script>
+</body>
+</html>
