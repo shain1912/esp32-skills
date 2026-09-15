@@ -104,6 +104,18 @@ Bundled: a verified `.ino` template, a static `mqtt.js` dashboard (no build step
 
 > "여러 esp32s3 대시보드 만들어줘" · "MQTT로 터치센서 값 여러 보드에서 모아줘" · "Mosquitto로 ESP32 여러 개 연결하고 싶어"
 
+### 📡 [`xiao-rf-remote-firebase`](skills/xiao-rf-remote-firebase/SKILL.md) — press a remote control from anywhere
+
+Turn an existing RF/IR remote into an internet button. A 2N2222A wired across the remote's button pad lets the board press it; a Firebase-hosted page (Realtime Database + Hosting + Google sign-in, free Spark plan) lets only the Google accounts you allow press it from any phone, with a delivery acknowledgement and online/offline status. Because it presses the physical button instead of cloning the code, it works with rolling-code remotes too.
+
+Everything is built on the **user's own Wi-Fi and own Firebase project**. After `firebase projects:create` and `apps:create`, one script (`scripts/setup.js`) does the rest: creates the default Realtime Database — which `firebase database:instances:create` refuses to do for a project's first database — renders `secrets.h` and the security rules, deploys hosting/auth/rules, and creates the device account in the order that works (Email/Password sign-in only exists after the auth deploy). Safe to re-run to add allowed accounts or change Wi-Fi.
+
+`hardware.md` covers the part that decides whether the circuit can work at all: a 5-minute multimeter test to find which pad is GND and whether the button is a pulled-up input, a power switch, or a matrix — with the optocoupler fallback for the latter two. Stale commands are ignored after a reboot, so a power cut never replays an old press.
+
+Verified: the provisioning script on a live Firebase project (create / re-run / password-reset paths), security rules (anonymous and out-of-scope access rejected), and firmware compile. A full end-to-end press on the reference hardware is still pending.
+
+> "리모컨 해킹해서 원격으로 누르고 싶어" · "firebase로 리모컨 IoT 만들어줘" · "how do I wire a transistor across a remote's button?"
+
 ### 🧠 [`xiao-edgeimpulse-train`](skills/xiao-edgeimpulse-train/SKILL.md) — TinyML training pipeline
 
 Train and deploy audio (keyword spotting) or vision (image classification) models using **only the Edge Impulse REST API** — no `edge-impulse-cli`, which fails to build on modern Node/Windows. Covers the whole loop:
