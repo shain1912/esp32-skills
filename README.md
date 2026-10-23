@@ -116,6 +116,25 @@ Verified: the provisioning script on a live Firebase project (create / re-run / 
 
 > "리모컨 해킹해서 원격으로 누르고 싶어" · "firebase로 리모컨 IoT 만들어줘" · "how do I wire a transistor across a remote's button?"
 
+### 🛰️ [`xiao-supabase-tailscale-dashboard`](skills/xiao-supabase-tailscale-dashboard/SKILL.md) — control and watch the board from anywhere
+
+One firmware, three ways in. On the same Wi-Fi the board serves its own dashboard (LED on/off, live touch state, camera stream). From anywhere, a static Netlify page drives the LED and shows touch state through a Supabase table, using REST on the board and Realtime in the browser. Over Tailscale, a PC on the board's LAN uses **Tailscale Serve** to proxy the full dashboard *and* the live camera to every tailnet device as HTTPS. ESP32 can't run Tailscale itself.
+
+The camera server is not the CameraWebServer example, for two reasons found the hard way. First, `esp_http_server` has a **1024-byte request-header limit compiled into the core**. Tailscale Serve adds identity headers (a profile-picture URL alone can blow it) and phones send long headers too, so the phone gets `431 Header fields are too long` while the PC works fine. Second, the example streams from inside the single server task, so one open viewer silently blocks every other viewer and `/capture`. The bundled server reads only the request line, skips headers of any length, and gives each client its own FreeRTOS task (3 concurrent viewers, a clean 503 for the 4th).
+
+Bundled: firmware (`.ino` + camera server + dashboard page), a `secrets.h` template, the Netlify page, and SQL that grants the public key **column-level UPDATE on one table only** with no insert or delete. It is safe to drop into a Supabase project shared with other apps. **12 numbered pitfalls**, including active-low LED, S3 touch values rising (not falling) on touch, `PSRAM=opi`, the "board looks online while off" trap when anything other than the device writes `updated_at`, a local-vs-cloud LED race, mixed-content camera URLs behind HTTPS, and deploying the repo root to Netlify with your Wi-Fi password in it.
+
+Verified on an XIAO ESP32S3 Sense (OV3660, esp32 core 3.2.0):
+- Supabase permissions (read and update allowed, insert, delete and other tables denied)
+- Two-way LED sync and Realtime events
+- LED control from the Netlify page
+- LAN and Tailscale video at about 25 fps
+- 3 KB-header requests and the 3-viewer limit
+
+Video on a real phone after the header fix is still pending. It was verified from a PC with simulated long headers.
+
+> "외부망에서도 제어하고 싶어" · "supabase랑 연결해줘" · "tailscale로 웹캠 스트리밍" · "휴대폰에서 영상 연결 실패" · "Header fields are too long"
+
 ### 🧠 [`xiao-edgeimpulse-train`](skills/xiao-edgeimpulse-train/SKILL.md) — TinyML training pipeline
 
 Train and deploy audio (keyword spotting) or vision (image classification) models using **only the Edge Impulse REST API** — no `edge-impulse-cli`, which fails to build on modern Node/Windows. Covers the whole loop:
